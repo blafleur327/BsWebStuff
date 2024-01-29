@@ -188,11 +188,11 @@ function ConstructTable(array,labels = null) {
 let drop = new Dropdown('Select Modular Universe:',BOX,'ba','number',2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24);
 let arr = new ArrayInput('Input Array Elements:',BOX,'number','blah');
 
-//import { SVG, extend as SVGextend, Element as SVGElement } from '@svgdotjs/svg.js';
+// import { SVG, extend as SVGextend, Element as SVGElement } from 'svg.js';
 
 let cont = document.createElement('div');
 cont.setAttribute('id','box');
-let shape = SVG.addTo(cont).size(100,100);
+let shape = SVG().addTo(cont).size(100,100);
 
 document.body.appendChild(cont);
 
