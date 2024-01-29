@@ -1,0 +1,35 @@
+#head {
+    display: block;
+    border-radius: 2px;
+    border-width: 2%;
+    border-color: black;
+    border-style: double;
+    text-align: center;
+}
+
+table {
+    border-radius: 2px;
+    border-color: black;
+    text-align: center;
+    border-style: inset;
+    align-items: center;
+    align-content: center;
+    align-self: center;
+}
+
+td {
+    border-radius: 1px;
+    border-color:black;
+    text-align: center;
+    border-style: solid;
+    align-items: center;
+}
+
+select {
+    border-radius: .1%;
+    padding: .1%;
+    text-align: center;
+    align-self: center;
+    fill-opacity:unset;
+}
+
