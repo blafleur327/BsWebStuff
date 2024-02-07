@@ -1,3 +1,5 @@
+//const { SVG, Circle } = require("@svgdotjs/svg.js");
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Loaded!');
 });
@@ -17,14 +19,15 @@ const modulo = (value, modulus) => {
         return modulus+temp;
     }
 };
-//let current = '';
-
-//HERES MY NEW STUFF Having some issues with timing! Might replace list and COLLECTOR object with STORE in back.js
-
-let collect = [];   //Variable for array creation;
-let modus = null;     //Variable for dropdown;
-
-function Dropdown(label,storage,id,type,...values) {
+/**
+ * 
+ * @param {string} label 
+ * @param {string} id 
+ * @param {string} type 
+ * @param  {...any} values 
+ */
+function Dropdown(label,id,type,...values) {
+    this.selection = null;
     let ddown = document.createElement('select');
     let lab = document.createElement('p');
     lab.innerHTML = `${label}`;
@@ -38,29 +41,33 @@ function Dropdown(label,storage,id,type,...values) {
     document.body.appendChild(lab);
     document.body.appendChild(ddown);
     document.body.appendChild(dis);
-    dis.innerHTML = `Modulo ${storage}:`
+    dis.innerHTML = `Modulo ${this.selection}:`
     document.addEventListener('click', (event) => {
         if (type == 'number' && event.target == ddown) {
-            storage = parseInt(event.target.value);
+            this.selection = parseInt(event.target.value);
+            console.log(this.selection);
         }
         else if (type == 'text' && event.target == ddown) {
-            storage = event.target.value;
+            this.selection = event.target.value;
         }
         else if (event.target !== ddown) {
             //Don't do anything!
         }
-        dis.innerHTML = `Modulo ${storage}:`
+        dis.innerHTML = `Modulo ${this.selection}:`
     });
 }
 
 /**
  * Constructor for an ArrayInput object. Creates an input box. Allows keypresses 'Enter' and 'Backspace'.
  * @param {string} label
- * @param {array} storage = empyt array [];
  * @param {string} type = "number"/"text";
  * @param {string} id 
  */
-function ArrayInput(label,storage,type,id) {
+function ArrayInput(label,type,id) {        //make storage a property.
+    this.elements = [];
+    this.as_set = function () {
+        return Array.from(new Set(this.elements.map(x => modulo(x,drop.selection)).sort((a,b) => a-b)));
+    };
     let inp = document.createElement('input');
     let labl = document.createElement('p');
     labl.innerHTML = `${label}`;
@@ -76,25 +83,26 @@ function ArrayInput(label,storage,type,id) {
         let possible = document.getElementById(`${id}`).value;
         if (event.key === 'Enter') {
             if (type == 'number' && /^[0-9]+/.test(possible) == true) {
-                storage.push(modulo(parseInt(possible),modus));//storage.items.array.append(parseInt(possible));
-                console.log(parseInt(possible));
+                this.elements.push(parseInt(possible));
+                console.log(this.as_set());
             }
             else if (type == 'number' && /^[0-9]+/.test(possible) == false) {
                 alert('Invalid!');
             }
             else {
-                storage.push(possible);//storage.items.array.append(possible);
+                this.elements.push(possible);
             }
             document.getElementById(`${id}`).value = '';
-            let out = `Array: [${storage}]`//storage.items.array.arraylist}]`;
+            let out = `Array: [${this.as_set()}]`
             display.innerHTML = out;
         }
         else if (event.key === 'Backspace' && document.getElementById(`${id}`).value == '') { //if empty, remove last element from storage.
-            storage.pop();//storage.items.array.arraylist.pop();
-            let out = `Array: [${storage}]`;
+            let lastChar = this.elements[this.elements.length-1];//this.elements.pop();
+            this.elements = this.elements.filter(x => x !== lastChar);
+            console.log(this.elements)
+            let out = `Array: [${this.as_set()}]`;
             display.innerHTML = out;
         }
-        console.log(storage);
     });
 }
 
@@ -145,9 +153,7 @@ function ConstructTable(array,labels = null) {
     document.body.appendChild(table);
 };
 
-let drop = new Dropdown('Select Modular Universe:',modus,'ba','number',2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24);
-let arr = new ArrayInput('Input Array Elements:',collect,'number','blah');
-
-
+let drop = new Dropdown('Select Modular Universe:','ba','number',2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24);
+let arr = new ArrayInput('Input Array Elements:','number','blah');
 
 
