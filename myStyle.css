@@ -8,21 +8,13 @@
 }
 
 table {
-    border-radius: 2px;
+    border-radius: 1px;
     border-color: black;
     text-align: center;
-    border-style: inset;
+    border-style: double;
     align-items: center;
     align-content: center;
     align-self: center;
-}
-
-td {
-    border-radius: 1px;
-    border-color:black;
-    text-align: center;
-    border-style: solid;
-    align-items: center;
 }
 
 select {
@@ -32,4 +24,11 @@ select {
     align-self: center;
     fill-opacity:unset;
 }
+
+svg {
+    border-radius: .1%;
+    border-color: black;
+    border-style: double;
+}
+
 
