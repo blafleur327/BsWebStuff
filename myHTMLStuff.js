@@ -1,3 +1,5 @@
+//const { Svg } = require("@svgdotjs/svg.js");
+
 /**
  * Sorts toSort array according to the correct sorting of indexArray.
  * @param {array} indexArray Index array 
@@ -446,7 +448,7 @@ function Dropdown(label,id,type,parent = null,...values) {
         else if (type == 'text') {
             this.selection = event.target.value;
         }
-        dis.innerHTML = `Modulo ${this.selection}:` //Need to modify.
+        dis.innerHTML = `Modulo ${this.selection}:` 
         document.getElementById('drawing').innerHTML = '';
         F = new drawCircles(500,500,200,this.selection); //Create new F updates upon selection.
     });
@@ -572,11 +574,15 @@ function makeRadio (parent) {
     but.addEventListener('mousedown', () => {
         this.status? this.status = false : this.status = true;
         console.log(`Status: ${this.status}`)
-        console.log(`Axes of Symmetry -> ${F.setRep.symmetry()}`)
-    })
+        console.log(F.allElems.map(x => x.selected == false));
     this.parent.appendChild(but)
+    });
 }
 
+/**
+ * Creates the input elements and for the program. Stores values.
+ * @param {string} parent id of parent element. 
+ */
 function NewPCInput (parent) {  //CURRENTLY NOT EXPANDABLE
     this.drop = new Dropdown('Select Modular Universe:','drop','number',parent,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24);
     //this.set = new ArrayInput('Input Array Elements:','number','set',parent,this.drop);
@@ -584,7 +590,7 @@ function NewPCInput (parent) {  //CURRENTLY NOT EXPANDABLE
     this.clear = new MakeButton(parent,'CLEAR','clr');
     this.radio = new makeRadio(parent);
      /**
-     * Creates a new div inside of the parent. 
+     * Creates a new div inside of the parent. To use as a display.
      * @param {string} id 
      */
      this.addDisplay = function (id) {
@@ -594,6 +600,7 @@ function NewPCInput (parent) {  //CURRENTLY NOT EXPANDABLE
         this[`${id}`] = dis;
     }
 }
+
 
 let set1 = new NewPCInput('column1');
 set1.addDisplay('dis1');
@@ -609,7 +616,7 @@ of the set class.`
 let message4 = `The Index Vector is shows the number of invariant tones at a given inversion. Note that this vector is ONLY true for the given NORMAL FORM, NOT the entire set class.`
 
 /**
- * 
+ * This constructor draws the circle elements according to input parameters from NewPCInput. 
  * @param {int} dx 
  * @param {int} dy 
  * @param {float} radius 
@@ -621,55 +628,61 @@ function drawCircles (dx,dy,radius,points) {
     this.draw = document.getElementById('drawing').value? "": SVG().addTo("#drawing").size(dx,dy);
     this.draw.clear();
     this.setRep = null;
+    /**
+     * Stores all information about each drawn circle element including its selected status and coordinates.
+     */
     this.allElems = [];
-    this.modification = []; //Store transformation. Needs external operation
+    /**
+     * Stores the transformation. dictated by the doubleDown element.
+     */
+    this.modification = []; 
     this.polyline = this.draw.polyline().fill('#3f3f3f52').stroke({ color: 'black', width: 2 });
-    this.modShape = this.draw.polyline().fill('#8de9ff52').stroke( {color: 'Grey', width: 2} );
+    this.modShape = this.draw.polyline().fill('#8de9ff52').stroke({color: 'Grey', width: 2});
     /**
      * Clears the drawing and creates a new instance of F. 
      */
     this.clear = () => {
         document.getElementById('drawing').innerHTML = '';
         F = new drawCircles(dx,dy,radius,points);
+        F.setRep = null;
+        document.getElementById('dis2').innerHTML = '';
+        console.log('Drawing Cleared');
     }
     /**
      * Updates the elements included in the set and draws. Called each click.
      */
     this.update = () => {
-        let res = [[],[]];  //Store points and coordinates for each element.
-        let mod = [[],[]];  //Store points and coordinates for each modified.
-        for (let x = 0; x < this.allElems.length; x++) {
-            if (this.allElems.length == 0) {
-                console.log('N/A: parent.allElems not initialized.');
-            }
-            else {  
-                if (this.allElems[x].selected == true && this.modification.indexOf(x) === -1) { 
-                    this.allElems[x].circle.fill('red');
-                    res[0].push(x);
-                    res[1].push(this.allElems[x].coords);
+        this.update = () => {
+            let res = [[], []];
+            let mod = [[], []];
+            this.allElems.forEach((elem, index) => {
+                if (elem.selected && this.modification.indexOf(index) === -1) { //Only clicked.
+                    elem.circle.fill('red');
+                    res[0].push(index);
+                    res[1].push(elem.coords);
+                } else if (this.modification.indexOf(index) !== -1 && !elem.selected) { //Only in modification
+                    elem.circle.fill('#79ff4cff');
+                    mod[0].push(index);
+                    mod[1].push(elem.coords);
+                } else if (this.modification.indexOf(index) !== -1 && elem.selected) {  //In both.
+                    elem.circle.fill('#ffee3aff');
+                    res[0].push(index);
+                    res[1].push(elem.coords);
+                    mod[0].push(index);
+                    mod[1].push(elem.coords);
+                } else {
+                    elem.circle.fill('white');  //Unselected
                 }
-                else if (this.modification.indexOf(x) !== -1 && this.allElems[x].selected === false) {
-                    this.allElems[x].circle.fill('#79ff4cff')
-                    mod[0].push(x);
-                    mod[1].push(this.allElems[x].coords)
-                }
-                else if (this.modification.indexOf(x) !== -1 && this.allElems[x].selected === true) {
-                    this.allElems[x].circle.fill('#ffee3aff')
-                    res[0].push(x);
-                    res[1].push(this.allElems[x].coords);
-                    mod[0].push(x);
-                    mod[1].push(this.allElems[x].coords);
-                }
-                else {
-                    this.allElems[x].circle.fill('white'); //If unselected
-                }
-            }
-        }
-        //console.log(`Original: [${res[0]}] -> Modified: [${mod[0]}]`);
+            });    
+        
         res[1].push(res[1][0])  
         mod[1].push(mod[1][0])  //Double the first coordinate to complete the shape.
         this.polyline.plot(res[1]);
         this.modShape.plot(mod[1]); //Plot both shapes.
+            
+        /**
+         * Creates the set object and then outputs them into the HTML.
+         */
         this.setRep = new MySet(set1.drop.selection,...res[0]);  //Create Set Object.
         document.getElementById('dis2').innerHTML = `<br>
         Normal Order: [${this.setRep.normal_order()}]<br>
@@ -677,23 +690,33 @@ function drawCircles (dx,dy,radius,points) {
         Interval Class Vector: <${this.setRep.interval_class_vector()}><br>
         Index Vector: <${this.setRep.index_vector()}><br>
         <br>`
+        }
     }
     for (let a = 0; a < points; a++) {
         let theta = (-Math.PI/2)+(2*Math.PI*a)/points;   //-Math.PI/2 = start angle 12 o'clock.
         let x = this.center[0]+radius*Math.cos(theta);
         let y = this.center[1]+radius*Math.sin(theta); 
-        const circle = this.draw.circle(30,30).stroke( { width: 1, color: 'black' }).fill('white').center(x,y).id(`circle${a}`);
-        const label = this.draw.text(`${a}`).center(x,y);
+        //USE POINT.EVENTS text = none so that circle responds. CSS or JS? Event Propagation.
+        const group = this.draw.group();
+        group.translate(x,y);   //Group allows event propogation with ease.
+        let circle = this.draw.circle(30,30).stroke( { width: 1, color: 'black' }).fill('white').center(0,0).id(`circle${a}`);//Set zIndex as high.
+        let label = this.draw.text(`${a}`).center(0,0);
+        group.add(circle);
+        group.add(label);
+        /**
+         * elem object contains all properties of the individual circles.  
+         */
         let elem = {
             circle,
             label,
+            element: group,
             selected: this.allElems && this.allElems.length >= points ? this.allElems[a].selected : false,
             coords: [x,y],
             /**
              * Toggles the elem.selected attribute. Required to draw shapes.
              */
             clicker: () => {
-                circle.click(() => {
+                elem.element.click(() => {
                     elem.selected = !elem.selected; //Toggle
                     console.log(`${a} -> ${elem.selected}`);
                     this.update();
@@ -701,12 +724,11 @@ function drawCircles (dx,dy,radius,points) {
             }
         }
         elem.clicker();
-        this.allElems[a] = elem;
+        this.allElems[a] = elem;    //Rewrite indexes of array.
     }
     document.getElementById('clr').addEventListener('mousedown',() => {
         this.clear();
-        document.getElementById('dis2').innerHTML = '';
-        console.log('Drawing Cleared');
+        //this.update();
     })
 };
 
@@ -718,6 +740,9 @@ function drawCircles (dx,dy,radius,points) {
 function DoubleDown (parent,targ,id) {
     this.Tval = null;
     this.Ival = null;
+    /**
+     * Stores the transposed or inverted array.
+     */
     this.modified = [];
     let tdrop = document.createElement('select');
     tdrop.setAttribute('id',`${id}t`);
@@ -750,31 +775,34 @@ function DoubleDown (parent,targ,id) {
         this.Tval = null;
         let tv = document.getElementById('doubt');
         let iv = document.getElementById('doubi');
-        if (event.target == tv) {   //tvalue is incorrect. Not sure what's going on here.
+        this.modified = [];
+        if (event.target == tv) {
             this.Tval = tv.value;
-            //console.log(`${F.setRep.set} -> ${F.setRep.transpose()}`)
             this.modified = F.setRep.transpose(undefined,undefined,this.Tval);
         }
         else if (event.target == iv) {
             this.Ival = iv.value;
-            console.log(`Inversion set to ${this.Ival}`);
             this.modified = F.setRep.invert(undefined,undefined,this.Ival); //Need to reset modified each time.
         }
         F.modification = this.modified;
         F.update(); //update drawing on click.
         });
     }
+
     /**
-     * Method for drawing lines of symmetry when toggled 'on'.
+     * Method for drawing lines of symmetry when toggled 'on' Need to find a way to remove on toggle.
      * @param {str} parent 
      */
     function symmetryShow (parent) {
         let but = document.createElement('button');
         this.on = false;
-        but.innerHTML = this.on;
+        but.innerHTML = this.on? 'Symmetry: On': 'Symmetry: Off';
         but.addEventListener('mousedown',() => {
             this.on = !this.on;
-            but.innerHTML = this.on;
+            but.innerHTML = this.on? 'Symmetry: On': 'Symmetry: Off'
+            /**
+            * Creates a new circle with modulus*2 points. So that half positions can be drawn.
+            */
             if (this.on == true) {
                 let allPoss = [];
                 for (let a = 0; a < (set1.drop.selection)*2; a++) { //Recalculate circle positions with half positions possible.
@@ -782,17 +810,20 @@ function DoubleDown (parent,targ,id) {
                     let x = F.center[0]+((F.diameter*1.2)/2)*Math.cos(theta);
                     let y = F.center[1]+((F.diameter*1.2)/2)*Math.sin(theta); 
                     allPoss.push([x,y]);
-                    //F.draw.circle(5).fill('blue').center(x,y);
                 }
+                /**
+                 * Creates set object and converts the axis of symmetry coordinates into 2*modulus.
+                 */
                 let symPoint = F.setRep.symmetry().map(z => [allPoss[z[0]*2],allPoss[z[1]*2]]); //Coordinates for points on axis of symmetry, I think this is an issue.
                 console.log(symPoint)
                 for (let b = 0; b < symPoint.length; b++) {
                     let line = F.draw.line().stroke( {width: 1, color: 'black', dasharray: '5,3'} );
                     line.plot(...unpack(symPoint[b]));
-                    //F.draw.circle(20).stroke( {width: 2, color: 'purple'} ).center(...symPoint[b][0]);
                     console.log(symPoint[b]);
                 }
-                //console.log(symPoint);
+            }
+            else {
+                F.update(); //Update Drawing
             }
         })
         document.getElementById(`${parent}`).appendChild(but);
@@ -800,4 +831,3 @@ function DoubleDown (parent,targ,id) {
     symmetryShow('column1');
 });
 
-//document.querySelector() to grab elements!

@@ -31,4 +31,12 @@ svg {
     border-style: double;
 }
 
+/* #circle {
+    pointer-events: all;
+}
+
+#tspan {
+    pointer-events: none;
+} */
+
 
