@@ -437,7 +437,7 @@ const Shape = {
     },
     Implode: function (center,points = 3,length) {
         this.draw = document.getElementById('drawing').value? "": SVG().addTo("#drawing").size(drawArea,drawArea);
-
+        
     },
     /**
      * Draws a lattice of triangles.

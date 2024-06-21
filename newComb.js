@@ -217,289 +217,6 @@ const ArrayMethods = {
     }
 }
 
-
-/**
- * Constructor of the MySet class. Contains methods for set theoretical computation.
- * @param {int} modulus 
- * @param  {...any} elements 
- */
-function MySet(modulus,...elements) {
-    this.modulo = (value,modulus) => { //(2 operations per call);
-        if (value >= 0) {
-            return value%modulus;
-        }
-        else {
-            return (value%modulus)+modulus;
-        }
-    }
-    this.universe = modulus,
-    this.set = Array.from(new Set(elements.map(x => this.modulo(x,this.universe)))).sort((a,b) => a-b), //3 operations
-    this.interval_class = (value,modulus = this.universe) => {
-        let opts = [this.modulo(value,modulus),this.modulo(modulus-value,modulus)];
-            return Math.min(...opts);
-        },
-    /**
-    * Returns the Adjacency Interval Series, or the intervals between consecutive elements in a given modular universe.
-    * @param {array} array 
-    * @param {int} modulus 
-    * @returns array. 
-    */
-    this.ais = (array = this.set,modulus = this.universe) => {  //O(n) (Linear)
-        let res = [];
-        for (let a = 1; a < array.length; a++) {
-            res.push(this.modulo(array[a]-array[a-1],modulus));
-            }
-        return res;
-        },
-    /**
-     * 
-     * @param {int} index 
-     * @returns this.set -> t(n) mod this.universe.
-     */
-    this.transpose = function (array = this.set, modulus = this.universe, index = 0) {
-        return array.map(x => this.modulo(x+index,modulus)); //O(n);
-    },
-    /**
-     * 
-     * @param {int} index 
-     * @returns this.set -> t(n)I mod this.universe. 
-     */
-    this.invert = function (array = this.set,modulus = this.universe,index = 0) {
-        return array.map(x => this.modulo(index-x,modulus)); //O(n);
-        },
-    /**
-    * Generates the powerset of an input using bitwise operands. Faster than array manipulation method. Useful for large sets. 
-    * @param {array} array 
-    * @returns powerset
-    */
-    this.literal_subsets = (cardinality = null,array = this.set) => {   // O(2^n) //4+(2^n) operations. 
-        let result = [];
-        if (cardinality === null) {
-            for (let a = 1; a <= array.length; a++) {
-                result.push(...Combinatorics.subsets(array,a));
-            }
-        }
-        else {
-            result = Combinatorics.subsets(array,cardinality);
-        }
-        return result;
-    },
-    /**
-     * There's a recursion depth issue here.
-     * @param {array} array 
-     * @param {int} mod 
-     * @returns Literal Subsets in Prime Form.
-     */
-    this.abstract_subsets = (cardinality = null,uniques = false,array = this.set, mod = this.universe) => {    //2 additional operations.
-        let start = this.literal_subsets(cardinality,array).filter(x => x.length > 2);
-        let res = start.map(y => this.prime_form(y,mod)).sort((a,b) => a.length < b.length);
-        return uniques? ArrayMethods.unique_subarray(res) : res;
-    },
-    /**
-     * Normal order function using the Straus-Rahn Algorithm. Iterative implementation.
-     * @param {array} array this.set
-     * @param {*} mod this.universe
-     * @returns Normal Order
-     */
-    this.normal_order = (array = this.set,mod = this.universe) => { // Total = O(n^2)
-        let index = array.length-1; 
-        let rotations = [...ArrayMethods.rotations(array.sort((a,b) => a-b))]; //n ops
-        while (index > 0) {     //n
-            let curr = [];
-            for (let a = 0; a < rotations.length; a++) {    //n
-                curr.push(this.modulo(rotations[a][index]-rotations[a][0],mod)); //1
-            }
-            let small = ArrayMethods.array_find(curr,Math.min(...curr)); //2 opers  Break upon finding single winner. Or If symmetrical return index 0.
-            if (small.length == 1 || index == 0) {
-                return rotations[small[0]];
-            }
-            else {      //Remove rotations not in small;
-                rotations = small.map(x => rotations[x]); //n
-            }
-            index--;//1
-        }
-        return rotations[0];    //if rotations.length > 1 all are acceptabe Normal Orders.
-    }
-    /**
-    * Returns the Prime Form of a set (Straus-Rahn)
-    * @param {array} array 
-    * @param {int} mod 
-    * @returns Prime Form
-    */
-    this.prime_form = (array = this.set,mod = this.universe) => { // O(n);
-        let norm = this.normal_order(array,mod);
-        let options = [norm,this.normal_order(this.invert(norm))];  //1
-        let intervals = options.map(x => this.ais(x,mod)); //n
-        let round = 0;
-        while (round < intervals[0].length) { //n-1;
-            if (intervals[0][round] < intervals[1][round]) {
-                return options[0].map(x => this.modulo(x-options[0][0],mod));
-            }
-            else if (intervals[0][round] > intervals[1][round]) {
-                return options[1].map(x => this.modulo(x-options[1][0],mod));
-            }
-            else if (round == array.length-2) {
-                return options[0].map(x => this.modulo(x-options[0][0],mod));
-            }
-            else {
-                round++;
-            }
-        }
-    },
-    /**
-     * Generates the ICV of an input set. The sum of all intervals between constituent members. Essentially a summary of invariant tones under transposition. Holds true for all members of set class.
-     * @param {array} array 
-     * @param {int} mod 
-     * @returns Interval Class Vector 
-     */
-    this.interval_class_vector = (array = this.set,mod = this.universe) => {    //n^2)/2
-        let collect = [];
-        for (let a = 0; a < array.length; a++) {
-            for (let b = a+1; b < array.length; b++) {
-                collect.push(this.modulo(array[b]-array[a],mod));//2
-            }
-        }
-        let vector = [];
-        for (let a = 1; a <= Math.floor(mod/2); a++) {
-            if (a == Math.ceil(mod/2)) {
-                vector.push(ArrayMethods.array_find(collect,a).length);
-            }
-            else {
-                vector.push(ArrayMethods.array_find(collect,a).length+ArrayMethods.array_find(collect,mod-a).length)
-            }
-        }
-        return vector;
-    },
-    /**
-     * Returns the IV of an input set. This is a summary of the number of invariant tones under inversion. As such it is unique to each T or I in a set class.
-     * @param {array} array 
-     * @param {int} mod 
-     * @returns Index Vector
-     */
-    this.index_vector = (array = this.set,mod = this.universe) => { // n^2+n+2
-        let collect = [];
-        for (let a = 0; a < array.length; a++) {
-            for (let b = 0; b < array.length; b++) {
-                collect.push(this.modulo(array[b]+array[a],mod));
-            }
-        }
-        let vector = [];
-        for (let a = 0; a < mod; a++) {
-            vector.push(ArrayMethods.array_find(collect,a).length);
-        }
-        return vector;
-    }
-    /**
-     * Returns all transpositions and inversions of a given set as an object literal.
-     * @param {array} array 
-     * @param {int} modulus 
-     * @returns Set Class
-     */
-    this.set_class = (array = this.set,modulus = this.universe) => {
-        let result = {};
-        for (let a = 0; a < modulus; a++) {
-            result['T'+a] = this.normal_order(array.map(x => this.modulo(x+a,modulus)),modulus);
-            result['I'+a] = this.normal_order(array.map(y => this.modulo(a-y,modulus)),modulus);
-        }
-        return result;
-    },
-    /**
-     * Determines if two input arrays have any meaningful PC relationship. It the sets are the same cardinality, test
-     *  for T/I and Z relation. If the two sets are not the same cardinality, tests for literal and abstract (Prime Form) inclusionary relationship.
-     * @param {array} array1 
-     * @param {array} array2 
-     * @param {int} modulus 
-     * @returns Relationship
-     */
-    this.compare_set = (array1, array2 = this.set,modulus = this.universe) => {
-        let no1 = this.normal_order(array1,modulus); 
-        let no2 = this.normal_order(); 
-        if (array1.length == array2.length) {   //Transposition or Inversional Equivalence.
-            let sc = this.set_class(no2,modulus);
-            let res = null;
-            for (value in sc) { 
-                if (ArrayMethods.array_concat(sc[value]) == ArrayMethods.array_concat(no1)) {
-                    res = value;
-                }
-            }
-            if (res === null) { //Z relation
-                if (ArrayMethods.array_concat(this.interval_class_vector(array2,modulus)) == ArrayMethods.array_concat(this.interval_class_vector(array1,modulus)) == true) {
-                    res = `[${array1}] and [${array2}] are Z related.`;
-                }
-                else {
-                    res = 'No Relationship.';
-                }
-            }
-            return res;
-        }
-        else {      //Not same cardinality. Maybe Move this up?
-            let sizes = [no1,no2].sort((a,b) => a.length - b.length); //sizes[0] = short sizes[1] = long;
-            let subs = {
-                'Literal': this.literal_subsets(null,sizes[1]).map(x => this.normal_order(x,modulus)),
-                'Abstract': this.abstract_subsets(sizes[1],modulus)
-                };
-            let checkLits = ArrayMethods.search_subarrays(sizes[0],subs['Literal']).length;
-            let checkAbs = ArrayMethods.search_subarrays(this.prime_form(sizes[0]),subs['Abstract']).length;
-            if (checkLits > 0) {
-                return `[${sizes[0]}] is a literal subset of [${sizes[1]}].`;
-            }
-            else if (checkLits == 0 && checkAbs > 0) {
-                return `[${sizes[0]}] is an abstract subset of [${sizes[1]}]. Contained ${checkAbs} times.`;
-            }
-            else {
-                return 'No inclusionary relationship.'
-            }
-        }
-    }
-};
-
-const palindrome = (array) => {
-    let res = 0;
-    for (let a = 0; a < array.length; a++) {
-        if (array[a] == array[array.length-(a+1)]) {
-            res++;
-        }
-    }
-    return res==array.length;
-}
-
-const mod = (value,modulus) => {
-    if (value >= 0) {
-        return value% modulus;
-    }
-    else {
-        return (value%modulus)+modulus;
-    }
-}
-
-
-/**
- * Checks the sup array for all elements of sub.
- * @param {array} sub 
- * @param {array} sup 
- * @returns boolean
- */
-const isLiteral = (sub,sup) => {
-    let res = sub.map(x => sup.indexOf(x) !== -1);
-    return res.every(x => x);
-}
-
-/**
- * Simplified way to determine at what T/I levels a superset contains a subset at.  
- * @param {array} sub 
- * @param {array} sup 
- * @param {int} modulus 
- * @returns Array
- */
-const isAbstract = (sub,sup,modulus) => {
-    let res = [];
-    let sc = new MySet(modulus,...sub).set_class();
-    for (let key in sc) {
-        isLiteral(sc[key],sup)? res.push(key) : null;
-    }
-    return res;
-}
-
 /**
  * Equivalent to the Python print operation, since I am lazy.
  * @param {function} operation 
@@ -671,7 +388,6 @@ const ScaleTheory = {
             return ArrayMethods.unique_subarray(result);    //Eliminate duplicates if present.
         }
     },
-    
     myhillsProperty: function (array,universe) { //Still not 100% sure how this is different from CV...
         return ScaleTheory.maximallyEven(array,universe)? ArrayFrom(new Set(ScaleTheory.ais(array,modulus,true))).length == 2: false;
     }
@@ -724,7 +440,7 @@ const Serialism = {
      * @param {boolean} pitches Make output pitch names?
      * @returns n*n matrix
      */
-    matrix: function (row,universe = 12,pitches = false,labels = false) {
+    buildMatrix: function (row,universe = 12,pitches = false,labels = false) {
         let result = [row];
         for (let a = 1; a < row.length; a++) {
             let tLevel = Serialism.modulo(row[0]-row[a],universe);
@@ -732,13 +448,15 @@ const Serialism = {
             result.push(row.map(elem => Serialism.modulo(elem+tLevel,universe)));
         }
         result = pitches? result.map(x => Serialism.toPitch(x,universe)) : result;  //Is this the issue?
+        //console.log(result);
         if (labels == true) {
             result.forEach(x => {
                 x.unshift(`P${x[0]}`);
                 x.push(`R${x[0]}`)
             })
-            result.unshift(row.map(z => `I${z}`));
-            result.push(row.map(z => `RI${z}`));
+            //console.log(result);
+            result.unshift(result[0].map(z => `I${z}`));
+            result.push(result[0].map(z => `R${z}`));
             result[0][0] = ' ';
             result[0][result[0].length-1] = ' ';
             result[result.length-1][0] = ' ';
@@ -815,36 +533,48 @@ const makeBinary = (array,universe,cut = false) => {
 let Q;
 
 document.addEventListener('DOMContentLoaded',() => {
-
-function Inputs(parent) {
-    this.universe = null;
+/**
+ * Creates Serial input object.
+ */
+function SerialInput() {
+    this.showNotes = false;
     this.row = [];
-    let box = document.getElementById(parent);
-    let mod = document.createElement('input');
-    mod.setAttribute('type','number');
-    box.appendChild(mod);
-    box.addEventListener('keydown',(event) => {
-        if (event.key === 'Enter') {
-            this.universe = mod.value;
+    this.universe = null;
+    let regex = /[0-9]+/ig;
+    let dev = document.createElement('input');
+    dev.setAttribute('type','text');
+    dev.setAttribute('placeholder','Tone Row Elements');
+    document.getElementById('input').appendChild(dev);
+    let notes = document.createElement('button');
+    notes.innerHTML = 'Toggle Notes/PCs'
+    document.getElementById('input').appendChild(notes);
+    let uni = document.createElement('input');
+    uni.setAttribute('type','number');
+    uni.setAttribute('placeholder','Universe')
+    document.getElementById('input').appendChild(uni);
+    uni.addEventListener('keydown',(event) => {
+        if (event.key == 'Enter') {
+            this.universe = parseInt(uni.value);
             console.log(this.universe);
-        for (let a = 0; a < this.universe; a++) {
-            let item = document.createElement('button');
-            item.innerHTML = `${a}`;
-            document.getElementById(parent).appendChild(item);
-            let but = {
-            'selected' : false,
-            'clicker' : () => {
-            item.addEventListener('mousedown',() => {
-                but.selected = !but.selected;
-                but.selected? this.row.push(a) : this.row = this.row.filter(x => x !== a);
-                console.log(this.row);
-            })
-            but.clicker();
-                    }
-                }
-            }
         }
-    });
+    })
+    notes.addEventListener('click',() => {
+        this.row = dev.value.match(regex).map(z => parseInt(z));
+        this.showNotes = !this.showNotes;
+        console.log(this.row);
+        document.getElementById('drawing').innerHTML = '';
+        Q = new Grid(Serialism.buildMatrix(this.row,this.universe,this.showNotes,true));
+    })
+    dev.addEventListener('keydown',(event) => {
+        if (event.key == 'Enter') {
+            this.row = dev.value.match(regex).map(z => parseInt(z));
+            console.log(this.row);
+            Q = new Grid(Serialism.buildMatrix(this.row,this.universe,this.showNotes,true));
+        }
+        else if (event.key == 'Backspace') {
+            document.getElementById('drawing').innerHTML = '';
+        }
+    })
 }
 
 /**
@@ -852,10 +582,11 @@ function Inputs(parent) {
  * @param {array} data 2d array
  * @param {boolean} pitches  
  */
-function Grid(data,pitches = false) {
-    this.size = 50;
+function Grid(data) {
+    this.size = 60;
     this.offset = 20;
-    let drawArea = this.size*data.length+this.offset*1.5;
+    console.log(data);
+    let drawArea = (this.size*data.length)+this.offset*1.5;
     this.allCoordinates = [];
     this.draw = document.getElementById('drawing').value? "": SVG().addTo("#drawing").size(drawArea,drawArea);
     for (let y = 0; y < data.length; y++) {
@@ -874,14 +605,7 @@ function Grid(data,pitches = false) {
                 'column': y,
                 'selected': false,
                 /** Determine if this is a label element.*/
-                'labelEl': () => {
-                    let result = false;
-                    let char1 = data[y][x][0];
-                    if (char1 == 'R' || char1 == 'P' || char1 == 'I' || char1 == ' ') {
-                        result = true;
-                    }
-                    return result;
-                }
+                'labelEl': x == 0 || y == 0 || x == data.length-1 || y == data.length-1
             });
         }
     }
@@ -890,15 +614,28 @@ function Grid(data,pitches = false) {
             element.box.stroke({color: 'white'});
             element.cell.click(() => {
                 element.selected = !element.selected;
-                element.selected == true? element.data.fill('red') : element.data.fill('black');
-                //Figure out functionality here.
+                if (element.selected == true) { //If label element is clicked.
+                    element.box.fill('red');
+                }
+                else {
+                    element.box.fill('white');
+                }
             });
+        }
+        else {
+            element.cell.click(() => {
+                let sel = element.data;
+                this.allCoordinates.forEach(item => {
+                    if (item.data == sel) {
+                        item.selected = true;
+                    }
+                })
+            })
         }
     })
 }
 
-//let L = new Inputs('input');
-let Q = new Grid(Serialism.matrix([7,6,9,8,0,1,10,11,3,2,5,4],12,false,true));
+let L = new SerialInput();
 
 })
 

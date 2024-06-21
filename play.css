@@ -1,0 +1,24 @@
+input {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: medium;
+    border-radius: 10px;
+}
+button {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: medium;
+    background-color:lightsteelblue;
+    border-radius: 10px;
+}
+
+div {
+    padding: 1px;
+    border-radius: 1px;
+    border-style: double;
+    border-color:darkgrey;
+}
+
+#container {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap-reverse;
+}
